@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>Laluanku — Submit</title>
+	<link rel="stylesheet" href="/src/styles.css">
+	<link rel="preconnect" href="https://fonts.googleapis.com">
+	<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+	<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+	<nav class="topbar">
+		<div class="brand">Laluanku</div>
+		<div class="nav-links">
+			<a href="/">Home</a>
+			<a href="/src/summary.html">Summary</a>
+		</div>
+	</nav>
+	<main class="container">
+		<h2>Submit Patrol Report</h2>
+		<div class="grid">
+			<div class="card col-8">
+				<div class="row">
+					<div class="col-12">
+						<label>Upload Images (max 250)</label>
+						<input id="images" type="file" multiple accept="image/*" />
+					</div>
+					<div class="col-6">
+						<label>Latitude</label>
+						<input id="lat" placeholder="Auto from GPS" />
+					</div>
+					<div class="col-6">
+						<label>Longitude</label>
+						<input id="lng" placeholder="Auto from GPS" />
+					</div>
+					<div class="col-12">
+						<label>Notes</label>
+						<textarea id="notes" rows="4" placeholder="Patrol notes..."></textarea>
+					</div>
+				</div>
+				<div class="toolbar" style="margin-top:12px;">
+					<button class="button" id="btn-gps">Use Current GPS</button>
+					<button class="button primary" id="btn-submit">Submit Report</button>
+				</div>
+			</div>
+			<div class="card col-4">
+				<h3 style="margin-top:0;">Preview</h3>
+				<div id="preview" class="thumbs"></div>
+			</div>
+		</div>
+	</main>
+	<script src="https://cdn.jsdelivr.net/npm/exifr@7.1.3/dist/lite.umd.min.js"></script>
+	<script type="module">
+		const imagesInput = document.getElementById('images');
+		const preview = document.getElementById('preview');
+		const btnGps = document.getElementById('btn-gps');
+		const btnSubmit = document.getElementById('btn-submit');
+		const latEl = document.getElementById('lat');
+		const lngEl = document.getElementById('lng');
+		const notesEl = document.getElementById('notes');
+
+		/** Collect EXIF GPS and capture times for each file. */
+		async function buildMediaMeta(files) {
+			const meta = {};
+			const tasks = Array.from(files).slice(0, 250).map(async (file) => {
+				try {
+					const exif = await exifr.parse(file, { gps: true });
+					meta[file.name] = {
+						lat: exif?.latitude ?? null,
+						lng: exif?.longitude ?? null,
+						takenAt: (exif?.DateTimeOriginal || exif?.CreateDate || exif?.ModifyDate) ? new Date(exif.DateTimeOriginal || exif.CreateDate || exif.ModifyDate).toISOString() : null
+					};
+				} catch (e) {
+					meta[file.name] = { lat: null, lng: null, takenAt: null };
+				}
+			});
+			await Promise.all(tasks);
+			return meta;
+		}
+
+		function renderPreview(files) {
+			preview.innerHTML = '';
+			Array.from(files).slice(0,250).forEach((file) => {
+				const url = URL.createObjectURL(file);
+				const div = document.createElement('div');
+				div.className = 'thumb';
+				div.innerHTML = `<img src="${url}" alt="thumb" />`;
+				preview.appendChild(div);
+			});
+		}
+
+		imagesInput.addEventListener('change', () => renderPreview(imagesInput.files));
+
+		async function captureGps() {
+			if (!navigator.geolocation) return alert('Geolocation not supported');
+			navigator.geolocation.getCurrentPosition((pos) => {
+				latEl.value = pos.coords.latitude.toFixed(6);
+				lngEl.value = pos.coords.longitude.toFixed(6);
+			}, (err) => alert('Failed to get location'));
+		}
+
+		btnGps.addEventListener('click', captureGps);
+		// Auto-capture on load for one-click
+		captureGps();
+
+		btnSubmit.addEventListener('click', async () => {
+			const files = imagesInput.files;
+			if (!files || files.length === 0) { alert('Please select images'); return; }
+			const meta = await buildMediaMeta(files);
+			const form = new FormData();
+			Array.from(files).slice(0,250).forEach(f => form.append('images', f, f.name));
+			form.append('notes', notesEl.value || '');
+			form.append('startLat', latEl.value || '');
+			form.append('startLng', lngEl.value || '');
+			form.append('mediaMeta', JSON.stringify(meta));
+			try {
+				const res = await fetch('/api/reports', { method: 'POST', body: form });
+				const data = await res.json();
+				if (!res.ok || !data.ok) throw new Error(data.error || 'Upload failed');
+				window.location.href = `/src/summary.html?report=${data.id}`;
+			} catch (e) {
+				alert('Failed to submit: ' + e.message);
+			}
+		});
+	</script>
+</body>
+</html>

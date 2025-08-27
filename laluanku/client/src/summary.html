@@ -1,0 +1,181 @@
+<!doctype html>
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>Laluanku — Summary</title>
+	<link rel="stylesheet" href="/src/styles.css">
+	<link rel="preconnect" href="https://fonts.googleapis.com">
+	<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+	<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+	<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="" />
+</head>
+<body>
+	<nav class="topbar">
+		<div class="brand">Laluanku</div>
+		<div class="nav-links">
+			<a href="/">Home</a>
+			<a href="/src/submit.html">Submit</a>
+		</div>
+	</nav>
+	<main class="container">
+		<div class="grid">
+			<div class="card col-8">
+				<div id="map"></div>
+			</div>
+			<div class="card col-4">
+				<div class="stats">
+					<div class="card stat-card">
+						<div>
+							<div class="stat-title">Total Images</div>
+							<div id="stat-images" class="stat-value">0</div>
+						</div>
+						<div>🖼️</div>
+					</div>
+					<div class="card stat-card">
+						<div>
+							<div class="stat-title">KM Covered</div>
+							<div id="stat-km" class="stat-value">0</div>
+						</div>
+						<div>🛣️</div>
+					</div>
+					<div class="card stat-card">
+						<div>
+							<div class="stat-title">Patrol Time</div>
+							<div id="stat-time" class="stat-value">0m</div>
+						</div>
+						<div>⏱️</div>
+					</div>
+				</div>
+				<div class="toolbar" style="margin-top:12px;">
+					<button class="button" id="btn-back">Back to Submit</button>
+					<button class="button" id="btn-download">Download PDF</button>
+				</div>
+			</div>
+		</div>
+		<div class="grid" style="margin-top:16px;">
+			<div class="card col-8">
+				<h3 style="margin-top:0;">Timeline</h3>
+				<div id="timeline" class="timeline"></div>
+			</div>
+			<div class="card col-4">
+				<h3 style="margin-top:0;">Dashcam / Video</h3>
+				<video id="video-slot" controls style="width:100%; border-radius: 12px; border:1px solid var(--border);"></video>
+			</div>
+		</div>
+	</main>
+	<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" integrity="sha512-/QxJcZOk9G1vGdGkZQ+oM6L3uG1KxV9mOJ1CwGmThyWbSov4SuAgKk4w0lY8C0u0CthlR2+UQ+t2LJ44yJm1DA==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+	<script type="module">
+		const url = new URL(window.location.href);
+		const reportId = url.searchParams.get('report');
+		const statImages = document.getElementById('stat-images');
+		const statKm = document.getElementById('stat-km');
+		const statTime = document.getElementById('stat-time');
+		const timeline = document.getElementById('timeline');
+		const btnDownload = document.getElementById('btn-download');
+		const btnBack = document.getElementById('btn-back');
+
+		btnBack.addEventListener('click', () => window.location.href = '/src/submit.html');
+
+		let map, layer, routeLine;
+		function initMap(center=[0,0]) {
+			map = L.map('map').setView(center, 12);
+			L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+				maxZoom: 19,
+				attribution: '© OpenStreetMap'
+			}).addTo(map);
+			layer = L.layerGroup().addTo(map);
+		}
+
+		function haversineKm(a, b) {
+			const toRad = (n) => n * Math.PI / 180;
+			const R = 6371;
+			const dLat = toRad(b[0]-a[0]);
+			const dLon = toRad(b[1]-a[1]);
+			const lat1 = toRad(a[0]);
+			const lat2 = toRad(b[0]);
+			const h = Math.sin(dLat/2)**2 + Math.cos(lat1)*Math.cos(lat2)*Math.sin(dLon/2)**2;
+			return 2*R*Math.asin(Math.sqrt(h));
+		}
+
+		function computeStats(points) {
+			let km = 0;
+			for (let i=1;i<points.length;i++) km += haversineKm(points[i-1], points[i]);
+			return km;
+		}
+
+		async function loadReport() {
+			if (!reportId) return;
+			const res = await fetch(`/api/reports/${reportId}`);
+			const data = await res.json();
+			if (!data.ok) { alert('Failed to load report'); return; }
+			const media = data.media;
+			statImages.textContent = media.length;
+
+			const geoMedia = media.filter(m => m.latitude && m.longitude);
+			const points = geoMedia.map(m => [m.latitude, m.longitude]);
+			if (!map) initMap(points[0] || [0,0]);
+			layer.clearLayers();
+			const markers = [];
+			points.forEach((p, idx) => {
+				const m = geoMedia[idx];
+				const marker = L.marker(p).addTo(layer);
+				marker.bindPopup(`<img src="${m.thumb_path || m.file_path}" style="max-width:160px;border-radius:8px;"/><div style='margin-top:6px;'>${m.taken_at ? new Date(m.taken_at).toLocaleString() : ''}</div>`);
+				markers.push(marker);
+			});
+			if (points.length > 1) {
+				if (routeLine) routeLine.remove();
+				routeLine = L.polyline(points, { color: '#5cc0ff' }).addTo(layer);
+				map.fitBounds(routeLine.getBounds(), { padding: [20,20] });
+			}
+			const km = computeStats(points);
+			statKm.textContent = km.toFixed(2);
+
+			const times = media.map(m => m.taken_at ? new Date(m.taken_at).getTime() : null).filter(Boolean);
+			const durationMin = times.length ? Math.max(...times) - Math.min(...times) : 0;
+			statTime.textContent = times.length ? Math.round(durationMin/60000) + 'm' : '0m';
+
+			// Timeline
+			timeline.innerHTML = '';
+			media.sort((a,b) => new Date(a.taken_at||a.created_at) - new Date(b.taken_at||b.created_at));
+			media.forEach(m => {
+				const row = document.createElement('div');
+				row.className = 'timeline-item';
+				row.innerHTML = `
+					<div class='time'>${m.taken_at ? new Date(m.taken_at).toLocaleString() : ''}</div>
+					<div><img src="${m.thumb_path || m.file_path}"/><div style='color:var(--muted);font-size:12px;'>${m.latitude&&m.longitude? (m.latitude.toFixed(5)+', '+m.longitude.toFixed(5)) : ''}</div></div>
+				`;
+				timeline.appendChild(row);
+			});
+
+			btnDownload.addEventListener('click', () => downloadPdf(data));
+		}
+
+		function downloadPdf(data) {
+			const { jsPDF } = window.jspdf;
+			const doc = new jsPDF({ unit: 'pt', format: 'a4' });
+			const margin = 40;
+			let y = margin;
+			doc.setFont('helvetica','bold'); doc.setFontSize(16);
+			doc.text('Laluanku Patrol Summary', margin, y);
+			y += 24; doc.setFontSize(11); doc.setFont('helvetica','normal');
+			doc.text(`Report ID: ${data.report.id}`, margin, y); y += 16;
+			doc.text(`Images: ${data.media.length}`, margin, y); y += 16;
+			doc.text(`KM Covered: ${document.getElementById('stat-km').textContent}`, margin, y); y += 16;
+			doc.text(`Patrol Time: ${document.getElementById('stat-time').textContent}`, margin, y); y += 24;
+			doc.text('Timeline', margin, y); y += 14;
+			const rows = data.media.slice(0, 20); // cap for quick export
+			rows.forEach((m, idx) => {
+				const line = `${idx+1}. ${m.taken_at ? new Date(m.taken_at).toLocaleString() : ''}  ${m.latitude && m.longitude ? (m.latitude.toFixed(5)+', '+m.longitude.toFixed(5)) : ''}`;
+				if (y > 780) { doc.addPage(); y = margin; }
+				doc.text(line, margin, y); y += 16;
+			});
+			doc.save('laluanku-report.pdf');
+		}
+
+		initMap([0,0]);
+		loadReport();
+	</script>
+</body>
+</html>
