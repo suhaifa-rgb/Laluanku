@@ -20,14 +20,32 @@
 		<section>
 			<h2>Upload Your Data</h2>
 			<form id="submit-form">
+				<label>Project ID
+					<input type="text" id="projectId" name="projectId" required />
+				</label>
+				<label>Project Title
+					<input type="text" id="projectTitle" name="projectTitle" required />
+				</label>
+				<label>Department
+					<select id="department" name="department" required>
+						<option value="" disabled selected>Select Department</option>
+						<option>Operations</option>
+						<option>Engineering</option>
+						<option>Finance</option>
+						<option>HR</option>
+					</select>
+				</label>
 				<label>Images
 					<input type="file" id="images" name="images" accept="image/*" multiple />
+					<div id="images-help" class="help muted">Up to 250 images.</div>
 				</label>
-				<label>GPS Track (GPX/JSON)
-					<input type="file" id="track" name="track" accept=".gpx,application/json" />
+				<label>GPS Location
+					<input type="text" id="gps" name="gps" placeholder="Auto-detecting..." readonly />
+					<input type="hidden" id="latitude" name="latitude" />
+					<input type="hidden" id="longitude" name="longitude" />
 				</label>
-				<label>Location
-					<input type="text" id="location" name="location" placeholder="e.g., Bandung, ID" />
+				<label>Short Notes
+					<textarea id="notes" name="notes" rows="4" placeholder="Write brief notes..."></textarea>
 				</label>
 				<button class="btn" type="submit">Submit</button>
 			</form>
