@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+	<title>Laluanku — Submit</title>
+	<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+	<header class="site-header">
+		<h1>Submit</h1>
+		<nav class="site-nav">
+			<a href="index.html">Home</a>
+			<a href="submit.html" aria-current="page">Submit</a>
+			<a href="summary.html">Summary</a>
+		</nav>
+	</header>
+
+	<main class="container">
+		<section>
+			<h2>Upload Your Data</h2>
+			<form id="submit-form">
+				<label>Project ID
+					<input type="text" id="projectId" name="projectId" required />
+				</label>
+				<label>Project Title
+					<input type="text" id="projectTitle" name="projectTitle" required />
+				</label>
+				<label>Department
+					<select id="department" name="department" required>
+						<option value="" disabled selected>Select Department</option>
+						<option>Operations</option>
+						<option>Engineering</option>
+						<option>Finance</option>
+						<option>HR</option>
+					</select>
+				</label>
+				<h3>Attachment</h3>
+				<label>Images
+					<input type="file" id="images" name="images" accept="image/*" multiple />
+					<div id="images-help" class="help muted">Up to 250 images.</div>
+				</label>
+				<label>GPS Location
+					<input type="text" id="gps" name="gps" placeholder="Auto-detecting..." readonly />
+					<input type="hidden" id="latitude" name="latitude" />
+					<input type="hidden" id="longitude" name="longitude" />
+				</label>
+				<label>Short Notes
+					<textarea id="notes" name="notes" rows="4" placeholder="Write brief notes..."></textarea>
+				</label>
+				<button class="btn" type="submit">Submit</button>
+			</form>
+			<div id="submit-result" class="muted"></div>
+		</section>
+	</main>
+
+	<footer class="site-footer">© <span id="year"></span> Laluanku</footer>
+	<script src="script.js"></script>
+</body>
+</html>
+
