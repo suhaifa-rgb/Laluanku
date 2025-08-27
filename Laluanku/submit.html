@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+	<title>Laluanku — Submit</title>
+	<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+	<header class="site-header">
+		<h1>Submit</h1>
+		<nav class="site-nav">
+			<a href="index.html">Home</a>
+			<a href="submit.html" aria-current="page">Submit</a>
+			<a href="summary.html">Summary</a>
+		</nav>
+	</header>
+
+	<main class="container">
+		<section>
+			<h2>Upload Your Data</h2>
+			<form id="submit-form">
+				<label>Images
+					<input type="file" id="images" name="images" accept="image/*" multiple />
+				</label>
+				<label>GPS Track (GPX/JSON)
+					<input type="file" id="track" name="track" accept=".gpx,application/json" />
+				</label>
+				<label>Location
+					<input type="text" id="location" name="location" placeholder="e.g., Bandung, ID" />
+				</label>
+				<button class="btn" type="submit">Submit</button>
+			</form>
+			<div id="submit-result" class="muted"></div>
+		</section>
+	</main>
+
+	<footer class="site-footer">© <span id="year"></span> Laluanku</footer>
+	<script src="script.js"></script>
+</body>
+</html>
+
