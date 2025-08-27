@@ -338,6 +338,37 @@
                                     </div>
                                 </div>
                             </div>
+                            <div class="row mt-24">
+                                <div class="col-12">
+                                    <h5 class="mb-12">Media, Location & Notes</h5>
+                                </div>
+                                <div class="col-md-6 col-sm-12 mb-24">
+                                    <div class="form-group">
+                                        <label class="form-label">Images (max 250)</label>
+                                        <input id="imageFiles" class="form-control" type="file" accept="image/*" multiple>
+                                        <small id="imageCount" class="form-text text-muted"></small>
+                                    </div>
+                                </div>
+                                <div class="col-md-6 col-sm-12 mb-24">
+                                    <div class="form-group">
+                                        <label class="form-label">Location (auto)</label>
+                                        <div class="row">
+                                            <div class="col-6 mb-12"><input id="gps-lat" class="form-control" placeholder="Latitude" readonly></div>
+                                            <div class="col-6 mb-12"><input id="gps-lng" class="form-control" placeholder="Longitude" readonly></div>
+                                        </div>
+                                        <div id="map" style="height:300px;border-radius:8px;"></div>
+                                    </div>
+                                </div>
+                                <div class="col-12 mb-24">
+                                    <div class="form-group">
+                                        <label class="form-label">Short Notes</label>
+                                        <textarea id="shortNotes" class="form-control" rows="4" placeholder="Add a short note"></textarea>
+                                    </div>
+                                </div>
+                                <div class="col-12">
+                                    <button id="submitNewProjectMedia" class="btn btn-primary btn-lg fs-16" type="button">Submit Media</button>
+                                </div>
+                            </div>
                         </div>
                         <div class="gr-btn mt-15"> <a href="#" class="btn btn-danger btn-lg mr-15 fs-16">CLOSE</a> <a href="#" class="btn btn-primary btn-lg fs-16" onclick="not1()">SUBMIT</a> </div>
                     </div>
@@ -463,6 +494,8 @@
     <script src="./js/main.js"></script>
     <script src="./js/shortcode.js"></script>
     <script src="./js/pages/datepicker.js"></script>
+    <script async defer src="https://maps.googleapis.com/maps/api/js?key=YOUR_GOOGLE_MAPS_API_KEY&callback=initProjectMap"></script>
+    <script src="./js/script.js"></script>
 
     <script>
     </script>
